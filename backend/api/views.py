@@ -1,6 +1,23 @@
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
+# Import all views from separate files
+from .views.genre import GenreViewSet
+from .views.artist import ArtistViewSet
+from .views.song import SongViewSet
+from .views.chord import ChordViewSet
+from .views.chord_diagram import ChordDiagramViewSet
+from .views.admin import AdminSongViewSet, AdminArtistViewSet, AdminGenreViewSet, AdminChordDiagramViewSet
+from .views.song_request import SongRequestViewSet, AdminSongRequestViewSet
 
-@api_view(["GET"])
-def ping(request):
-    return Response({"status": "ok", "service": "django-api"})
+# Re-export all views for backward compatibility
+__all__ = [
+    'GenreViewSet',
+    'ArtistViewSet',
+    'SongViewSet',
+    'ChordViewSet',
+    'ChordDiagramViewSet',
+    'AdminSongViewSet',
+    'AdminArtistViewSet',
+    'AdminGenreViewSet',
+    'AdminChordDiagramViewSet',
+    'SongRequestViewSet',
+    'AdminSongRequestViewSet',
+]

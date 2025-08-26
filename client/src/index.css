@@ -1,3 +1,224 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Custom font family */
+@layer base {
+  html {
+    font-family: 'Roboto Mono', monospace;
+  }
+}
+
+/* Custom styles for Turkish Music homepage */
+@layer components {
+  .font-roboto-mono {
+    font-family: 'Roboto Mono', monospace;
+  }
+  
+  .search-input {
+    transition: all 0.3s ease;
+  }
+  
+  .search-input:focus {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  }
+  
+  .explore-button {
+    transition: all 0.3s ease;
+  }
+  
+  .explore-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+  
+  .song-card {
+    transition: all 0.3s ease;
+  }
+  
+  .song-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Flying Letter Animation - Birds converging from different directions */
+@keyframes flyInLetter {
+  0% {
+    opacity: 0;
+    transform: translate(var(--fly-x, 0), var(--fly-y, 0)) rotate(var(--fly-rotate, 0deg)) scale(0.3);
+  }
+  60% {
+    opacity: 1;
+    transform: translate(calc(var(--fly-x, 0) * 0.1), calc(var(--fly-y, 0) * 0.1)) rotate(calc(var(--fly-rotate, 0deg) * 0.1)) scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+.animate-fly-in-letter {
+  animation: flyInLetter 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+}
+
+/* Ninja Strike Animation for Search Bar */
+@keyframes ninjaStrike {
+  0% {
+    opacity: 0;
+    transform: translateY(-100px) scale(0.8) rotateX(90deg);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0) scale(1.05) rotateX(0deg);
+  }
+  60% {
+    transform: translateY(0) scale(1.05) rotateX(0deg);
+  }
+  70% {
+    transform: translateY(0) scale(1.02) rotateX(0deg);
+  }
+  80% {
+    transform: translateY(0) scale(1.05) rotateX(0deg);
+  }
+  90% {
+    transform: translateY(0) scale(1.02) rotateX(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotateX(0deg);
+  }
+}
+
+.animate-ninja-strike {
+  animation: ninjaStrike 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  will-change: transform, opacity;
+}
+
+/* Fade In Up Animation */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  will-change: transform, opacity;
+}
+
+/* Smooth Scrolling Marquee Animation */
+.marquee-container {
+  overflow: hidden;
+  position: relative;
+  width: 100%;
+}
+
+.marquee-content {
+  display: flex;
+  animation: marquee 40s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.marquee-content:hover {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+/* Enhanced search bar focus effects */
+.search-bar:focus-within {
+  transform: scale(1.02);
+}
+
+/* Smooth transitions for all interactive elements */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Performance optimizations for 60fps animations */
+.animate-fly-in-letter,
+.animate-ninja-strike,
+.animate-fade-in-up,
+.marquee-content {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* Mobile responsiveness improvements */
+@media (max-width: 768px) {
+  .animate-fly-in-letter {
+    --fly-x: calc((random() - 0.5) * 100px);
+    --fly-y: calc((random() - 0.5) * 100px);
+    --fly-rotate: calc((random() - 0.5) * 90deg);
+  }
+  
+  .marquee-content {
+    animation-duration: 30s;
+  }
+}
+
+/* Responsive text sizing */
+@media (max-width: 640px) {
+  .hero-title {
+    font-size: 3rem;
+    line-height: 1.1;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.125rem;
+    line-height: 1.4;
+  }
+}
+
+/* Enhanced shadows and effects */
+.enhanced-shadow {
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.glass-effect {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Canvas animation styles */
+canvas {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
+/* Equalizer bar animations */
+@keyframes equalizerBar {
+  0%, 100% {
+    transform: scaleY(0.3);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+.equalizer-bar {
+  animation: equalizerBar 0.5s ease-in-out infinite;
+  animation-delay: calc(var(--bar-index) * 0.1s);
+}
