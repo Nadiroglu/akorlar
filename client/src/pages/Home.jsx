@@ -30,7 +30,7 @@ const Home = () => {
     console.log('🚀 DIRECT API CALL - NO HOOKS')
     hasLoadedRef.current = true
     
-    fetch('http://localhost:8000/api/songs/')
+    fetch('/api/songs/')
       .then(response => response.json())
       .then(data => {
         console.log('✅ DIRECT API SUCCESS:', data)
@@ -43,6 +43,8 @@ const Home = () => {
         setLoading(false)
       })
   }, [])
+
+  console.log(songs)
 
   // Memoize search results to prevent unnecessary recalculations
   const filteredResults = useMemo(() => {

@@ -1,0 +1,27 @@
+[1mdiff --git a/backend/venv/bin/python b/backend/venv/bin/python[m
+[1mdeleted file mode 120000[m
+[1mindex 6e7f3c7..0000000[m
+[1m--- a/backend/venv/bin/python[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-python3.11[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/venv/bin/python3 b/backend/venv/bin/python3[m
+[1mdeleted file mode 120000[m
+[1mindex 6e7f3c7..0000000[m
+[1m--- a/backend/venv/bin/python3[m
+[1m+++ /dev/null[m
+[36m@@ -1 +0,0 @@[m
+[31m-python3.11[m
+\ No newline at end of file[m
+[1mdiff --git a/backend/venv/pyvenv.cfg b/backend/venv/pyvenv.cfg[m
+[1mdeleted file mode 100644[m
+[1mindex a6d656e..0000000[m
+[1m--- a/backend/venv/pyvenv.cfg[m
+[1m+++ /dev/null[m
+[36m@@ -1,5 +0,0 @@[m
+[31m-home = /home/nailowski/.pyenv/versions/3.11.7/bin[m
+[31m-include-system-site-packages = false[m
+[31m-version = 3.11.7[m
+[31m-executable = /home/nailowski/.pyenv/versions/3.11.7/bin/python3.11[m
+[31m-command = /home/nailowski/.pyenv/versions/3.11.7/bin/python3.11 -m venv /mnt/c/Users/nadir/proj/akorlar/backend/venv[m

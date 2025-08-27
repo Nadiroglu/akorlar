@@ -58,8 +58,17 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'http://127.0.0.1:8000'
+    'http://127.0.0.1:8000',
+    'http://localhost:8000',
+    'http://127.0.0.1:5173',
+    'http://localhost:5173',
+    'http://127.0.0.1:3000',
+    'http://localhost:3000'
 ]
+
+# Additional CORS settings for development
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
 
 ROOT_URLCONF = 'api.urls'
 

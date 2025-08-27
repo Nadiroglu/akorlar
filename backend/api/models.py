@@ -76,6 +76,7 @@ class Chord(models.Model):
     bar = models.IntegerField()  # Bar number
     beat = models.IntegerField()  # Beat within the bar
     duration = models.DecimalField(max_digits=3, decimal_places=1, default=1.0)  # Duration in beats
+    roman_numeral = models.CharField(max_length=10, blank=True)  # I, ii, V, etc.
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -92,6 +93,7 @@ class ChordDiagram(models.Model):
     frets = models.JSONField()  # Fret positions for each string
     fingers = models.JSONField()  # Finger positions
     difficulty = models.CharField(max_length=20, choices=Song.DIFFICULTY_CHOICES, default='intermediate')
+    capo_friendly = models.BooleanField(default=False)  # Works well with capo
     created_at = models.DateTimeField(auto_now_add=True)
     
     class Meta:
