@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 """
-Seed file for Artist model
-Run with: python manage.py shell < seeds_artist.py
+Seed file for the Artist model.
+Uses update_or_create to ensure data is always fresh and correct.
+Run with: python manage.py shell < seeds/seeds_artist.py
 """
 
 from api.models import Artist
 from datetime import date
 
 def seed_artists():
-    """Seed artists with famous Turkish musicians"""
+    """Seed artists with famous Turkish musicians."""
+    
+    print("🎤 Starting artist seeding...")
+
     artists_data = [
         {
             'name': 'Barış Manço',
@@ -77,8 +81,13 @@ def seed_artists():
     ]
     
     created_count = 0
+    updated_count = 0
+
     for artist_data in artists_data:
-        artist, created = Artist.objects.get_or_create(
+        # Use update_or_create to keep records fresh.
+        # It finds an artist by 'name'. If found, it updates the other fields.
+        # If not found, it creates a new artist.
+        obj, created = Artist.objects.update_or_create(
             name=artist_data['name'],
             defaults={
                 'bio': artist_data['bio'],
@@ -88,14 +97,18 @@ def seed_artists():
                 'website': artist_data['website']
             }
         )
+        
         if created:
             created_count += 1
-            print(f"Created artist: {artist.name}")
+            print(f"✅ Created artist: {obj.name}")
         else:
-            print(f"Artist already exists: {artist.name}")
+            updated_count += 1
+            print(f"🔄 Updated artist: {obj.name}")
     
-    print(f"\nTotal artists created: {created_count}")
+    print("\n🎉 Artist seeding completed!")
+    print(f"📊 Total created: {created_count}, Total updated: {updated_count}")
     return created_count
 
-if __name__ == "__main__":
+# This check ensures the script can be run directly from the manage.py shell
+if __name__ == 'django.core.management.commands.shell':
     seed_artists()

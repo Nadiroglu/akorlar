@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Master seed file that runs all individual seed files in the correct order
-Run with: python manage.py shell < seeds_master.py
+Run with: python manage.py shell < seeds/seeds_master.py
 """
 
 import os
@@ -9,74 +9,77 @@ import sys
 import django
 
 # Setup Django environment
+# Make sure to replace 'backend.settings' with your actual project's settings module path
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 django.setup()
 
 def run_all_seeds():
-    """Run all seed files in the correct order"""
+    """Run all seed files in the correct order to populate the database."""
     print("🌱 Starting database seeding process...\n")
+    
+    total_records = 0
     
     try:
         # 1. Seed Genres first (no dependencies)
+        # Use absolute imports from the 'api' app to fix the ImportError
         print("📚 Seeding Genres...")
         from api.seeds.seeds_genre import seed_genres
-        genre_count = seed_genres()
-        print(f"✅ Genres seeded: {genre_count}\n")
+        count = seed_genres()
+        total_records += count
+        print(f"✅ Genres seeded: {count}\n")
         
         # 2. Seed Artists (no dependencies)
         print("🎤 Seeding Artists...")
         from api.seeds.seeds_artist import seed_artists
-        artist_count = seed_artists()
-        print(f"✅ Artists seeded: {artist_count}\n")
+        count = seed_artists()
+        total_records += count
+        print(f"✅ Artists seeded: {count}\n")
         
         # 3. Seed Songs (depends on Genres and Artists)
         print("🎵 Seeding Songs...")
         from api.seeds.seeds_song import seed_songs
-        song_count = seed_songs()
-        print(f"✅ Songs seeded: {song_count}\n")
+        count = seed_songs()
+        total_records += count
+        print(f"✅ Songs seeded: {count}\n")
         
         # 4. Seed Chord Diagrams (no dependencies)
         print("🎸 Seeding Chord Diagrams...")
         from api.seeds.seeds_chord_diagram import seed_chord_diagrams
-        chord_diagram_count = seed_chord_diagrams()
-        print(f"✅ Chord Diagrams seeded: {chord_diagram_count}\n")
+        count = seed_chord_diagrams()
+        total_records += count
+        print(f"✅ Chord Diagrams seeded: {count}\n")
         
         # 5. Seed Chords (depends on Songs)
+        # Using the robust, declarative seeder to ensure data integrity
         print("🎼 Seeding Chords...")
-        from api.seeds.seeds_chord_professional import seed_chords_professional
-        chord_count = seed_chords_professional()
-        print(f"✅ Chords seeded: {chord_count}\n")
+        from api.seeds.seeds_chord import seed_chords
+        count = seed_chords()
+        total_records += count
+        print(f"✅ Chords seeded: {count}\n")
         
-        # 6. Seed Search Queries (no dependencies)
-        print("🔍 Seeding Search Queries...")
-        from api.seeds.seeds_search_query import seed_search_queries
-        search_query_count = seed_search_queries()
-        print(f"✅ Search Queries seeded: {search_query_count}\n")
+        # This part is optional if you don't have a search query seeder
+        # from .seeds_search_query import seed_search_queries
+        # ...
         
-        # Summary
-        total_created = genre_count + artist_count + song_count + chord_diagram_count + chord_count + search_query_count
+        print("-" * 40)
         print("🎉 Database seeding completed successfully!")
-        print(f"📊 Total records created: {total_created}")
-        print("\n📋 Summary:")
-        print(f"   • Genres: {genre_count}")
-        print(f"   • Artists: {artist_count}")
-        print(f"   • Songs: {song_count}")
-        print(f"   • Chord Diagrams: {chord_diagram_count}")
-        print(f"   • Chords: {chord_count}")
-        print(f"   • Search Queries: {search_query_count}")
+        print(f"📊 Total records created or updated: {total_records}")
+        print("-" * 40)
         
+    except ImportError as e:
+        print(f"\n❌ IMPORT ERROR: {e}")
+        print("Please make sure all referenced seed files (e.g., seeds_song.py) exist in the 'seeds' directory.")
+        return False
     except Exception as e:
-        print(f"❌ Error during seeding: {str(e)}")
-        print("Please check that all required models exist and dependencies are met.")
+        print(f"\n❌ An unexpected error occurred during seeding: {e}")
         return False
     
     return True
 
-if __name__ == "__main__":
+if __name__ == 'django.core.management.commands.shell':
     success = run_all_seeds()
     if success:
         print("\n🚀 Your database is now populated with sample data!")
-        print("You can now test your API endpoints with real data.")
     else:
         print("\n💥 Seeding failed. Please check the error messages above.")
-        sys.exit(1)
+

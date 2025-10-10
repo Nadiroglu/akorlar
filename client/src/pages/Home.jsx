@@ -65,8 +65,8 @@ const Home = () => {
   // Animation sequence timing - memoized to prevent recreation
   const animationTimeline = useMemo(() => [
     { phase: 'unmasking', delay: 500 },
-    { phase: 'letters', delay: 2500 },
-    { phase: 'search', delay: 4000 },
+    { phase: 'letters', delay: 1500 },
+    { phase: 'search', delay: 2000 },
     { phase: 'marquee', delay: 5000 }
   ], [])
 
@@ -132,7 +132,7 @@ const Home = () => {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.9)'
       ctx.fillRect(0, 0, width, unmaskHeight)
 
-      progress += 0.02
+      progress += 0.0009
       
       if (progress < 1) {
         animationRef.current = requestAnimationFrame(animate)
@@ -192,7 +192,7 @@ const Home = () => {
       {/* Title Section */}
       <div className="text-center mb-16">
         {/* TURKISH MUSIC */}
-        <h1 className={`text-6xl md:text-8xl font-bold mb-6 transition-all duration-1000 ${
+        <h1 h1 className={`text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-bold mb-6 transition-all duration-1000 ${
           lettersVisible 
             ? 'opacity-100 translate-y-0' 
             : 'opacity-0 translate-y-20'

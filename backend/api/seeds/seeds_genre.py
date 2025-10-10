@@ -1,13 +1,17 @@
 #!/usr/bin/env python
 """
-Seed file for Genre model
-Run with: python manage.py shell < seeds_genre.py
+Seed file for the Genre model.
+Uses update_or_create to ensure data is always fresh and correct.
+Run with: python manage.py shell < seeds/seeds_genre.py
 """
 
 from api.models import Genre
 
 def seed_genres():
-    """Seed genres with Turkish music styles"""
+    """Seed genres with Turkish music styles."""
+    
+    print("🎶 Starting genre seeding...")
+
     genres_data = [
         {
             'name': 'Türk Halk Müziği',
@@ -44,19 +48,28 @@ def seed_genres():
     ]
     
     created_count = 0
+    updated_count = 0
+
     for genre_data in genres_data:
-        genre, created = Genre.objects.get_or_create(
+        # Use update_or_create to keep records fresh.
+        # It finds a genre by 'name'. If found, it updates the description.
+        # If not found, it creates a new genre.
+        obj, created = Genre.objects.update_or_create(
             name=genre_data['name'],
             defaults={'description': genre_data['description']}
         )
+        
         if created:
             created_count += 1
-            print(f"Created genre: {genre.name}")
+            print(f"✅ Created genre: {obj.name}")
         else:
-            print(f"Genre already exists: {genre.name}")
+            updated_count += 1
+            print(f"🔄 Updated genre: {obj.name}")
     
-    print(f"\nTotal genres created: {created_count}")
+    print("\n🎉 Genre seeding completed!")
+    print(f"📊 Total created: {created_count}, Total updated: {updated_count}")
     return created_count
 
-if __name__ == "__main__":
+# This check ensures the script can be run directly from the manage.py shell
+if __name__ == 'django.core.management.commands.shell':
     seed_genres()

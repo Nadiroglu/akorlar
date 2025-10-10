@@ -202,17 +202,15 @@ const songsAPI = new SongsAPI()
 export default songsAPI
 
 // Export individual methods for convenience
-export const {
-  getSongs,
-  getSongById,
-  searchSongs,
-  getPopularSongs,
-  getSongsByGenre,
-  getSongsByArtist,
-  getSongsByDifficulty,
-  clearCache,
-  clearCacheEntry,
-  getCacheStats,
-  getSongsGlobal,
-  resetGlobalState
-} = songsAPI
+export const getSongs = songsAPI.getSongs.bind(songsAPI)
+export const getSongById = songsAPI.getSongById.bind(songsAPI)
+export const searchSongs = songsAPI.searchSongs.bind(songsAPI)
+export const getPopularSongs = songsAPI.getPopularSongs.bind(songsAPI)
+export const getSongsByGenre = songsAPI.getSongsByGenre.bind(songsAPI)
+export const getSongsByArtist = songsAPI.getSongsByArtist.bind(songsAPI)
+export const getSongsByDifficulty = songsAPI.getSongsByDifficulty.bind(songsAPI)
+export const clearCache = songsAPI.clearCache.bind(songsAPI)
+export const clearCacheEntry = songsAPI.clearCacheEntry.bind(songsAPI)
+export const getCacheStats = songsAPI.getCacheStats.bind(songsAPI)
+export const getSongsGlobal = songsAPI.getSongsGlobal.bind(songsAPI)
+export const resetGlobalState = songsAPI.resetGlobalState.bind(songsAPI)

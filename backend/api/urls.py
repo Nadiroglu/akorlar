@@ -1,26 +1,31 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from . import views
 
-# Create router and register viewsets
+# CORRECTED IMPORTS: Import only the ViewSets that actually exist
+from .views import (
+    GenreViewSet,
+    ArtistViewSet,
+    SongViewSet,
+    ChordViewSet,
+    ChordDiagramViewSet,
+    SongRequestViewSet,
+)
+
+# Create a single router for the entire API
 router = DefaultRouter()
 
-# Public API endpoints
-router.register(r'api/genres', views.GenreViewSet)
-router.register(r'api/artists', views.ArtistViewSet)
-router.register(r'api/songs', views.SongViewSet)
-router.register(r'api/chords', views.ChordViewSet)
-router.register(r'api/chord-diagrams', views.ChordDiagramViewSet)
-router.register(r'api/song-requests', views.SongRequestViewSet)
-
-# Admin API endpoints
-router.register(r'api/admin/songs', views.AdminSongViewSet, basename='admin-songs')
-router.register(r'api/admin/artists', views.AdminArtistViewSet, basename='admin-artists')
-router.register(r'api/admin/genres', views.AdminGenreViewSet, basename='admin-genres')
-router.register(r'api/admin/chord-diagrams', views.AdminChordDiagramViewSet, basename='admin-chord-diagrams')
-router.register(r'api/admin/song-requests', views.AdminSongRequestViewSet, basename='admin-song-requests')
-
+# --- Register Public-Facing ViewSets ---
+router.register(r'genres', GenreViewSet, basename='genre')
+router.register(r'artists', ArtistViewSet, basename='artist')
+router.register(r'songs', SongViewSet, basename='song')
+router.register(r'chords', ChordViewSet, basename='chord')
+router.register(r'chord-diagrams', ChordDiagramViewSet, basename='chorddiagram')
+router.register(r'song-requests', SongRequestViewSet, basename='songrequest')
+x
 urlpatterns = [
+    # All generated API URLs are now included under the main router
     path('', include(router.urls)),
-    path('api-auth/', include('rest_framework.urls')),
+    
+    # This provides the browsable API's login/logout views
+    path('api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]

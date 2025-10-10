@@ -70,7 +70,7 @@ CORS_ALLOWED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = False  # Keep this False for security
 
-ROOT_URLCONF = 'api.urls'
+ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
     {

@@ -3,8 +3,10 @@ import React from 'react'
 const Spinner = ({ 
   size = 'md', 
   color = 'pink', 
-  className = '' 
+  className = '',
+  type = 'spinner' // 'spinner' or 'equalizer'
 }) => {
+  // Original spinner sizes
   const sizeClasses = {
     sm: 'w-4 h-4',
     md: 'w-6 h-6',
@@ -18,7 +20,43 @@ const Spinner = ({
     gray: 'text-gray-500',
     blue: 'text-blue-500'
   }
+
+  // Equalizer bar sizes
+  const equalizerSizes = {
+    sm: 'w-1 h-6',
+    md: 'w-2 h-10',
+    lg: 'w-3 h-16',
+    xl: 'w-4 h-24'
+  }
+
+  const equalizerColors = {
+    pink: 'bg-pink-500',
+    white: 'bg-white',
+    gray: 'bg-gray-500',
+    blue: 'bg-blue-500'
+  }
   
+  // If equalizer type, show 3 bars
+  if (type === 'equalizer') {
+    return (
+      <div className={`flex items-end gap-2 ${className}`}>
+        <div 
+          className={`${equalizerSizes[size]} ${equalizerColors[color]} rounded-sm animate-equalizer-bar`}
+          style={{ animationDelay: '0s' }}
+        />
+        <div 
+          className={`${equalizerSizes[size]} ${equalizerColors[color]} rounded-sm animate-equalizer-bar`}
+          style={{ animationDelay: '0.2s' }}
+        />
+        <div 
+          className={`${equalizerSizes[size]} ${equalizerColors[color]} rounded-sm animate-equalizer-bar`}
+          style={{ animationDelay: '0.4s' }}
+        />
+      </div>
+    )
+  }
+
+  // Original spinner (default)
   const classes = `animate-spin ${sizeClasses[size]} ${colorClasses[color]} ${className}`
 
   return (

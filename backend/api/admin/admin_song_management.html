@@ -1,0 +1,307 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}{% if mode == 'edit' %}Edit Song: {{ song.title }}{% else %}Create New Song{% endif %}{% endblock %}
+
+{% block extrastyle %}
+    {{ block.super }}
+    <style>
+        :root {
+            --primary: #4A90E2; /* Django admin blue */
+            --secondary: #f5f5f5;
+            --danger: #d9534f;
+            --success: #5cb85c;
+            --border-color: #ddd;
+        }
+        .main-container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+        .grid-container { display: grid; grid-template-columns: 1fr 2fr; gap: 2rem; align-items: start; }
+        .form-section { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .chord-list-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid var(--border-color); }
+        .chord-list-item:last-child { border-bottom: none; }
+        .modal { display: none; position: fixed; z-index: 1050; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 10% auto; padding: 20px; border: 1px solid #888; width: 80%; max-width: 500px; border-radius: 8px; }
+        .close-button { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .errorlist { color: var(--danger); margin-top: -10px; padding-left: 20px; list-style-type: disc; }
+        .form-section h2, .form-section h3 { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 15px; }
+        #messages { list-style-type: none; padding: 0; margin: 0 0 20px 0; }
+        #messages li { padding: 10px 15px; border-radius: 4px; color: #fff; }
+        #messages li.success { background-color: var(--success); }
+        #messages li.error { background-color: var(--danger); }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="main-container">
+    <ul id="messages">
+        {% if messages %}
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        {% endif %}
+    </ul>
+
+    <h1>{% if mode == 'edit' %}Manage Song: {{ song.title }}{% else %}Create New Song{% endif %}</h1>
+    <p><a href="{% url 'admin:api_song_changelist' %}">&larr; Back to Song List</a></p>
+
+    <div class="grid-container">
+        <!-- Song Details Form -->
+        <div class="form-section">
+            <h2>Song Details</h2>
+            <form id="song-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save_song">
+                {{ form.as_p }}
+                <button type="submit" class="button default">Save Song Details</button>
+            </form>
+            <hr style="margin: 20px 0;">
+            <h3>Quick Add</h3>
+            <div id="quick-add-artist-form">
+                <input type="text" id="new-artist-name" placeholder="New Artist Name">
+                <button type="button" id="add-artist-btn" class="button">Add Artist</button>
+            </div>
+             <div id="quick-add-genre-form" style="margin-top: 10px;">
+                <input type="text" id="new-genre-name" placeholder="New Genre Name">
+                <button type="button" id="add-genre-btn" class="button">Add Genre</button>
+            </div>
+        </div>
+
+        <!-- Chords Section -->
+        <div class="form-section">
+            <h2>Chords</h2>
+            {% if mode == 'edit' %}
+                <div id="chord-list">
+                    {% for chord in chords %}
+                        <div class="chord-list-item" data-chord-id="{{ chord.id }}" data-chord-data='{{ chord|json_script:"chord-data" }}'>
+                            <span><strong>{{ chord.chord_name }}</strong> (Measure: {{ chord.measure }}, Beat: {{ chord.beat }})</span>
+                            <div>
+                                <button class="button edit-chord-btn">Edit</button>
+                                <button class="button delete-chord-btn" style="background-color: var(--danger); border-color: var(--danger);">Delete</button>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <button id="show-add-chord-modal" class="button" style="margin-top: 20px; background-color: var(--success); border-color: var(--success);">Add New Chord</button>
+                <div style="margin-top:20px;">
+                    <h3>Transpose Song</h3>
+                    <input type="text" id="transpose-key-input" placeholder="e.g., C, Gm, F#" value="{{ song.key }}">
+                    <button id="transpose-btn" class="button">Transpose</button>
+                </div>
+            {% else %}
+                <p>Please save the song first before you can add chords.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Chord Modal -->
+<div id="chord-modal" class="modal">
+    <div class="modal-content">
+        <span class="close-button">&times;</span>
+        <h2 id="modal-title">Add Chord</h2>
+        <form id="chord-form">
+            <input type="hidden" name="action" id="chord-action">
+            <input type="hidden" name="chord_id" id="chord-id-input">
+            
+            <p><label for="root">Root:</label> <input type="text" name="root" id="chord-root" required></p>
+            <p>
+                <label for="quality">Quality:</label>
+                <select name="quality" id="chord-quality" required>
+                    {% for quality_val, quality_name in chord_qualities_display %}
+                    <option value="{{ quality_val }}">{{ quality_name }}</option>
+                    {% endfor %}
+                </select>
+            </p>
+            <p><label for="extensions">Extensions (comma-sep):</label> <input type="text" name="extensions" id="chord-extensions"></p>
+            <p><label for="inversion">Inversion:</label> <input type="text" name="inversion" value="root" id="chord-inversion"></p>
+            <p><label for="measure">Measure:</label> <input type="number" name="measure" value="1" id="chord-measure" required></p>
+            <p><label for="beat">Beat:</label> <input type="number" name="beat" value="1" step="0.25" id="chord-beat" required></p>
+            <p><label for="sub_beat">Sub-beat:</label> <input type="number" name="sub_beat" value="0" step="0.25" id="chord-sub_beat"></p>
+            <p><label for="duration_in_beats">Duration (beats):</label> <input type="number" name="duration_in_beats" value="1" step="0.25" id="chord-duration" required></p>
+            
+            <button type="submit" class="button default">Save Chord</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const songId = "{{ song.id|default:'' }}";
+    const songForm = document.getElementById('song-form');
+    const chordForm = document.getElementById('chord-form');
+    const modal = document.getElementById('chord-modal');
+    const closeModal = document.querySelector('.close-button');
+
+    // --- Utility for API calls ---
+    async function sendRequest(url, formData) {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': csrfToken, 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData
+            });
+            return { ok: response.ok, data: await response.json() };
+        } catch (error) {
+            console.error('Request failed:', error);
+            displayMessage('An unexpected network error occurred.', 'error');
+            return { ok: false, data: { error: 'Network error' } };
+        }
+    }
+    
+    function displayMessage(message, type = 'success') {
+        const messagesContainer = document.getElementById('messages');
+        messagesContainer.innerHTML = `<li class="${type}">${message}</li>`;
+        window.scrollTo(0, 0);
+    }
+
+    // --- Song Form Logic ---
+    songForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(songForm);
+        const url = window.location.pathname; // The view handles create vs update
+        
+        const { ok, data } = await sendRequest(url, formData);
+
+        if (ok) {
+            displayMessage('Song saved successfully!');
+            if (!songId && data.song_id) {
+                // If this was a new song, redirect to the edit page
+                window.location.href = `/admin/api/song/manage/${data.song_id}/`;
+            }
+        } else {
+            const errorMsg = Object.values(data.errors).flat().join('\n');
+            displayMessage('Error saving song: \n' + errorMsg, 'error');
+        }
+    });
+
+    // --- Chord Modal Logic ---
+    document.getElementById('show-add-chord-modal')?.addEventListener('click', () => {
+        document.getElementById('modal-title').textContent = 'Add Chord';
+        document.getElementById('chord-action').value = 'add_chord';
+        chordForm.reset();
+        modal.style.display = 'block';
+    });
+
+    closeModal.addEventListener('click', () => modal.style.display = 'none');
+    window.addEventListener('click', (e) => {
+        if (e.target == modal) {
+            modal.style.display = 'none';
+        }
+    });
+    
+    // --- Chord Form Submission (Add/Update) ---
+    chordForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const formData = new FormData(chordForm);
+        const url = window.location.pathname;
+        
+        const { ok, data } = await sendRequest(url, formData);
+        
+        if (ok) {
+            displayMessage('Chord saved!', 'success');
+            setTimeout(() => location.reload(), 500); // Simple reload to see changes
+        } else {
+            const errorMsg = Object.values(data.errors).flat().join('\n');
+            displayMessage('Error saving chord: ' + errorMsg, 'error');
+        }
+    });
+
+    // --- Chord List Actions (Edit/Delete) ---
+    document.getElementById('chord-list')?.addEventListener('click', async function(e) {
+        const target = e.target;
+        const chordItem = target.closest('.chord-list-item');
+        if (!chordItem) return;
+
+        const chordId = chordItem.dataset.chordId;
+
+        // Delete Chord
+        if (target.classList.contains('delete-chord-btn')) {
+            if (confirm('Are you sure you want to delete this chord?')) {
+                const formData = new FormData();
+                formData.append('action', 'delete_chord');
+                formData.append('chord_id', chordId);
+                const url = window.location.pathname;
+                
+                const { ok, data } = await sendRequest(url, formData);
+                
+                if (ok) {
+                    chordItem.remove();
+                    displayMessage('Chord deleted.', 'success');
+                } else {
+                    displayMessage('Error deleting chord: ' + data.error, 'error');
+                }
+            }
+        }
+    });
+    
+    // --- Quick Add Actions ---
+    document.getElementById('add-artist-btn')?.addEventListener('click', async function() {
+        const artistName = document.getElementById('new-artist-name').value;
+        if (!artistName.trim()) return;
+
+        const formData = new FormData();
+        formData.append('action', 'add_artist');
+        formData.append('name', artistName);
+        const url = "{% url 'admin:song_management_create' %}"; // Use create URL
+
+        const { ok, data } = await sendRequest(url, formData);
+        if (ok) {
+            const artistSelect = document.querySelector('select[name="artist"]');
+            const newOption = new Option(data.artist_name, data.artist_id, false, true); // text, value, defaultSelected, selected
+            artistSelect.add(newOption);
+            displayMessage(`Artist "${data.artist_name}" added and selected.`, 'success');
+        } else {
+            displayMessage('Error adding artist: ' + data.error, 'error');
+        }
+    });
+    
+    document.getElementById('add-genre-btn')?.addEventListener('click', async function() {
+        const genreName = document.getElementById('new-genre-name').value;
+        if (!genreName.trim()) return;
+
+        const formData = new FormData();
+        formData.append('action', 'add_genre');
+        formData.append('name', genreName);
+        const url = "{% url 'admin:song_management_create' %}";
+
+        const { ok, data } = await sendRequest(url, formData);
+        if (ok) {
+            const genreSelect = document.querySelector('select[name="genre"]');
+            const newOption = new Option(data.genre_name, data.genre_id, false, true);
+            genreSelect.add(newOption);
+            displayMessage(`Genre "${data.genre_name}" added and selected.`, 'success');
+        } else {
+            displayMessage('Error adding genre: ' + data.error, 'error');
+        }
+    });
+
+    // --- Transpose Action ---
+    document.getElementById('transpose-btn')?.addEventListener('click', async function() {
+        const newKey = document.getElementById('transpose-key-input').value;
+        if (!newKey.trim()) {
+            displayMessage('Please enter a target key to transpose to.', 'error');
+return;
+        }
+
+        if (confirm(`Are you sure you want to permanently transpose this song to ${newKey}? This cannot be undone.`)) {
+            const formData = new FormData();
+            formData.append('action', 'transpose_chords');
+            formData.append('new_key', newKey);
+            const url = window.location.pathname;
+            
+            const { ok, data } = await sendRequest(url, formData);
+            if (ok) {
+                displayMessage('Song transposed successfully! The page will now reload.', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                displayMessage('Error transposing song: ' + data.error, 'error');
+            }
+        }
+    });
+
+});
+</script>
+{% endblock %}
+

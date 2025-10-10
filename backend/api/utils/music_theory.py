@@ -4,221 +4,204 @@ Professional Music Theory Engine for Akorlar
 Handles chord generation, progressions, transposition, and music theory calculations
 """
 
-import re
-from typing import List, Dict, Tuple, Optional
-from enum import Enum
+from typing import List, Dict, Optional
 
+# --- Core Music Theory Definitions ---
+# Using dictionaries for flexibility with various string inputs (e.g., 'Db', 'C#')
+NOTE_TO_SEMITONE: Dict[str, int] = {
+    'C': 0, 'B#': 0,
+    'C#': 1, 'DB': 1,
+    'D': 2,
+    'D#': 3, 'EB': 3,
+    'E': 4, 'FB': 4,
+    'F': 5, 'E#': 5,
+    'F#': 6, 'GB': 6,
+    'G': 7,
+    'G#': 8, 'AB': 8,
+    'A': 9,
+    'A#': 10, 'BB': 10,
+    'B': 11, 'CB': 11,
+}
 
-class Note(Enum):
-    """Musical notes with their semitone values"""
-    C = 0
-    C_SHARP = 1
-    D = 2
-    D_SHARP = 3
-    E = 4
-    F = 5
-    F_SHARP = 6
-    G = 7
-    G_SHARP = 8
-    A = 9
-    A_SHARP = 10
-    B = 11
+SEMITONE_TO_NOTE_SHARP: Dict[int, str] = {
+    0: 'C', 1: 'C#', 2: 'D', 3: 'D#', 4: 'E', 5: 'F',
+    6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'A#', 11: 'B'
+}
 
+SEMITONE_TO_NOTE_FLAT: Dict[int, str] = {
+    0: 'C', 1: 'Db', 2: 'D', 3: 'Eb', 4: 'E', 5: 'F',
+    6: 'Gb', 7: 'G', 8: 'Ab', 9: 'A', 10: 'Bb', 11: 'B'
+}
 
-class ChordType(Enum):
-    """Chord types with their interval patterns"""
-    MAJOR = [0, 4, 7]           # Root, Major Third, Perfect Fifth
-    MINOR = [0, 3, 7]            # Root, Minor Third, Perfect Fifth
-    DIMINISHED = [0, 3, 6]       # Root, Minor Third, Diminished Fifth
-    AUGMENTED = [0, 4, 8]        # Root, Major Third, Augmented Fifth
-    MAJOR_7TH = [0, 4, 7, 11]   # Root, Major Third, Perfect Fifth, Major Seventh
-    MINOR_7TH = [0, 3, 7, 10]   # Root, Minor Third, Perfect Fifth, Minor Seventh
-    DOMINANT_7TH = [0, 4, 7, 10] # Root, Major Third, Perfect Fifth, Minor Seventh
-    DIMINISHED_7TH = [0, 3, 6, 9] # Root, Minor Third, Diminished Fifth, Diminished Seventh
-
+# --- Utility Class for Building Chord Names ---
+class ChordBuilder:
+    """Reusable chord name builder from structured fields."""
+    def build_name(self, root: str, quality: str = '', bass: Optional[str] = None) -> str:
+        """Constructs a standardized chord symbol."""
+        # Convert model quality to display quality (e.g., 'major' -> '', 'minor' -> 'm')
+        quality_map = {
+            'major': '',
+            'minor': 'm',
+            'diminished': 'dim',
+            'dominant7': '7',
+        }
+        display_quality = quality_map.get(quality, quality) # Fallback to the quality itself
+        
+        name = f"{root}{display_quality}"
+        if bass:
+            name += f"/{bass}"
+        return name
 
 class MusicTheoryEngine:
-    """Professional music theory engine for chord operations"""
+    """A robust music theory engine for chord and key operations."""
     
-    # Note names for display
-    NOTE_NAMES = {
-        0: 'C', 1: 'C#', 2: 'D', 3: 'D#', 4: 'E', 5: 'F',
-        6: 'F#', 7: 'G', 8: 'G#', 9: 'A', 10: 'A#', 11: 'B'
-    }
+    # Diatonic chord qualities for major and natural minor scales
+    MAJOR_KEY_QUALITIES = ["major", "minor", "minor", "major", "major", "minor", "diminished"]
+    MINOR_KEY_QUALITIES = ["minor", "diminished", "major", "minor", "minor", "major", "major"]
     
-    # Flat note names
-    FLAT_NOTE_NAMES = {
-        0: 'C', 1: 'Db', 2: 'D', 3: 'Eb', 4: 'E', 5: 'F',
-        6: 'Gb', 7: 'G', 8: 'Ab', 9: 'A', 10: 'Bb', 11: 'B'
-    }
-    
-    # Major scale intervals
-    MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
+    # Roman numeral to scale degree index (0-based)
+    ROMAN_MAP = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5, "VII": 6}
     
     # Common chord progressions (Roman numerals)
     COMMON_PROGRESSIONS = {
-        "pop": ["I", "vi", "IV", "V"],
-        "folk": ["I", "V", "vi", "IV"],
+        "pop": ["I", "V", "vi", "IV"],
         "jazz": ["ii", "V", "I", "vi"],
-        "blues": ["I", "IV", "I", "V", "IV", "I"],
+        "blues": ["I", "IV", "V", "I"],
         "turkish_pop": ["i", "VII", "VI", "V"],
-        "turkish_folk": ["i", "v", "VI", "III"],
-        "arabesk": ["i", "VII", "VI", "V", "i"]
     }
     
     def __init__(self):
-        self._note_to_semitone = {note.name: note.value for note in Note}
-        self._semitone_to_note = {note.value: note.name for note in Note}
-    
+        self.builder = ChordBuilder()
+
     def note_to_semitone(self, note_name: str) -> int:
-        """Convert note name to semitone value"""
-        # Handle both sharp and flat notations
-        note_name = note_name.upper().replace('B', 'Bb').replace('#', 'SHARP')
-        
-        if note_name in self._note_to_semitone:
-            return self._note_to_semitone[note_name]
-        
-        # Handle enharmonic equivalents
-        enharmonic_map = {
-            'C#': 'Db', 'D#': 'Eb', 'F#': 'Gb', 'G#': 'Ab', 'A#': 'Bb'
-        }
-        
-        if note_name in enharmonic_map:
-            return self._note_to_semitone[enharmonic_map[note_name]]
-        
-        raise ValueError(f"Invalid note name: {note_name}")
-    
+        """Converts any valid note name to its semitone value."""
+        standardized = note_name.strip().upper().replace('♭', 'B').replace('♯', '#')
+        if standardized in NOTE_TO_SEMITONE:
+            return NOTE_TO_SEMITONE[standardized]
+        raise ValueError(f"Invalid note name: '{note_name}'")
+
     def semitone_to_note(self, semitone: int, use_flats: bool = False) -> str:
-        """Convert semitone value to note name"""
-        semitone = semitone % 12
-        if use_flats:
-            return self.FLAT_NOTE_NAMES[semitone]
-        return self.NOTE_NAMES[semitone]
-    
-    def transpose_note(self, note_name: str, semitones: int, use_flats: bool = False) -> str:
-        """Transpose a note by given semitones"""
-        original_semitone = self.note_to_semitone(note_name)
-        new_semitone = (original_semitone + semitones) % 12
-        return self.semitone_to_note(new_semitone, use_flats)
-    
-    def build_chord(self, root_note: str, chord_type: ChordType) -> List[str]:
-        """Build a chord from root note and chord type"""
-        root_semitone = self.note_to_semitone(root_note)
-        chord_notes = []
+        """Converts a semitone value back to a note name."""
+        semitone %= 12
+        return SEMITONE_TO_NOTE_FLAT[semitone] if use_flats else SEMITONE_TO_NOTE_SHARP[semitone]
         
-        for interval in chord_type.value:
-            note_semitone = (root_semitone + interval) % 12
-            note_name = self.semitone_to_note(note_semitone)
-            chord_notes.append(note_name)
+    def get_roman_numeral(self, key: str, chord_root: str, chord_quality: str) -> Dict[str, str]:
+        """
+        Determines the Roman numeral for a chord within a given key.
+        This final version is more resilient to common chromatic alterations.
+        """
+        key_root_str = key.strip().replace('m', '').replace(' major', '').replace(' minor', '')
+        key_is_minor = 'm' in key.lower() or 'minor' in key.lower()
         
-        return chord_notes
-    
-    def roman_numeral_to_chord(self, roman_numeral: str, key: str) -> str:
-        """Convert Roman numeral to actual chord in given key"""
-        # Parse Roman numeral
-        numeral = roman_numeral.upper()
-        quality = "major"  # Default
+        key_root_semitone = self.note_to_semitone(key_root_str)
+        chord_root_semitone = self.note_to_semitone(chord_root)
+
+        # Calculate the interval from the key's root to the chord's root
+        interval = (chord_root_semitone - key_root_semitone + 12) % 12
+
+        # Define the scale intervals for lookup
+        major_scale_intervals = {0: 0, 2: 1, 4: 2, 5: 3, 7: 4, 9: 5, 11: 6} # interval -> degree
+        minor_scale_intervals = {0: 0, 2: 1, 3: 2, 5: 3, 7: 4, 8: 5, 10: 6}
+
+        scale_to_check = minor_scale_intervals if key_is_minor else major_scale_intervals
         
-        if numeral.startswith('i'):
-            quality = "minor"
-            numeral = numeral[1:]
-        elif numeral.startswith('v'):
-            quality = "minor"
-            numeral = numeral[1:]
+        degree = None
+        accidental = ""
+
+        # Check for a direct diatonic match first
+        if interval in scale_to_check:
+            degree = scale_to_check[interval]
+        else:
+            # Check for common chromatic alterations (e.g., bVII in a major key)
+            flat_interval = (interval + 1) % 12
+            if flat_interval in scale_to_check:
+                degree = scale_to_check[flat_interval]
+                accidental = "b"
+
+        if degree is None:
+            raise ValueError(f"Chord root '{chord_root}' is not diatonic or a simple alteration in the key of {key}")
+
+        # Determine the expected diatonic quality and the numeral
+        qualities_to_check = self.MINOR_KEY_QUALITIES if key_is_minor else self.MAJOR_KEY_QUALITIES
+        expected_quality = qualities_to_check[degree]
         
-        # Get scale degree
-        degree_map = {"I": 0, "II": 1, "III": 2, "IV": 3, "V": 4, "VI": 5, "VII": 6}
-        if numeral not in degree_map:
+        numeral = list(self.ROMAN_MAP.keys())[degree]
+
+        # Set case based on the actual chord quality, not the diatonic expectation
+        if chord_quality in ['minor', 'diminished']:
+            numeral = numeral.lower()
+        
+        return {"roman_numeral": accidental + numeral, "expected_quality": expected_quality}
+
+    def roman_numeral_to_chord(self, roman_numeral: str, key: str, key_is_minor: bool) -> Dict[str, str]:
+        """
+        Converts a Roman numeral to a chord components dictionary within a given key.
+        """
+        numeral_upper = roman_numeral.upper()
+        if numeral_upper not in self.ROMAN_MAP:
             raise ValueError(f"Invalid Roman numeral: {roman_numeral}")
+        degree = self.ROMAN_MAP[numeral_upper]
         
-        scale_degree = degree_map[numeral]
+        key_root_semitone = self.note_to_semitone(key)
+        major_scale_intervals = [0, 2, 4, 5, 7, 9, 11]
+        root_semitone = (key_root_semitone + major_scale_intervals[degree]) % 12
         
-        # Get the note at this scale degree
-        key_semitone = self.note_to_semitone(key)
-        scale_note_semitone = (key_semitone + self.MAJOR_SCALE[scale_degree]) % 12
-        scale_note = self.semitone_to_note(scale_note_semitone)
+        if key_is_minor:
+            # Adjust for the flattened 3rd, 6th, and 7th of a natural minor scale
+            if degree in [2, 5, 6]:
+                root_semitone = (root_semitone - 1 + 12) % 12
+            quality = self.MINOR_KEY_QUALITIES[degree]
+        else:
+            quality = self.MAJOR_KEY_QUALITIES[degree]
+            
+        # The V chord in a minor key is almost always raised to be major (dominant)
+        if key_is_minor and degree == 4:
+            quality = "major"
         
-        # Determine chord quality based on scale degree and key
-        if key.upper() in ['C', 'G', 'D', 'A', 'E', 'B', 'F#']:  # Sharp keys
-            if scale_degree in [1, 2, 5]:  # ii, iii, vi are minor in major keys
-                quality = "minor"
-            elif scale_degree == 6:  # vii is diminished
-                quality = "diminished"
-        else:  # Flat keys
-            if scale_degree in [1, 2, 5]:
-                quality = "minor"
-            elif scale_degree == 6:
-                quality = "diminished"
-        
-        return f"{scale_note}{'m' if quality == 'minor' else ''}"
-    
-    def generate_progression(self, key: str, progression_type: str, bars: int = 4, beats_per_bar: int = 4) -> List[Dict]:
-        """Generate a complete chord progression with timing"""
+        return {
+            "root": self.semitone_to_note(root_semitone),
+            "quality": quality,
+        }
+
+    def generate_progression(self, key: str, progression_type: str) -> List[Dict]:
+        """Generates a list of chord data from a key and progression type."""
         if progression_type not in self.COMMON_PROGRESSIONS:
             raise ValueError(f"Unknown progression type: {progression_type}")
-        
+            
+        key_root = key.replace('m', '')
+        key_is_minor = 'm' in key
         pattern = self.COMMON_PROGRESSIONS[progression_type]
+        
         progression = []
-        
-        # Calculate how many times to repeat the pattern to fill the bars
-        total_beats = bars * beats_per_bar
-        pattern_beats = len(pattern)
-        repetitions = total_beats // pattern_beats
-        
-        for bar in range(bars):
-            for beat in range(beats_per_bar):
-                pattern_index = (bar * beats_per_bar + beat) % pattern_beats
-                roman_numeral = pattern[pattern_index]
-                
-                try:
-                    chord_name = self.roman_numeral_to_chord(roman_numeral, key)
-                    progression.append({
-                        'chord_name': chord_name,
-                        'bar': bar + 1,
-                        'beat': beat + 1,
-                        'duration': 1,  # 1 beat duration
-                        'roman_numeral': roman_numeral
-                    })
-                except ValueError as e:
-                    # Fallback to basic chord if Roman numeral conversion fails
-                    progression.append({
-                        'chord_name': f"{key}",
-                        'bar': bar + 1,
-                        'beat': beat + 1,
-                        'duration': 1,
-                        'roman_numeral': roman_numeral
-                    })
-        
+        for i, numeral in enumerate(pattern):
+            try:
+                chord_components = self.roman_numeral_to_chord(numeral, key_root, key_is_minor)
+                progression.append({
+                    'chord_name': self.builder.build_name(**chord_components),
+                    'bar': (i // 4) + 1,
+                    'beat': (i % 4) + 1,
+                    'roman_numeral': numeral,
+                    **chord_components,
+                })
+            except ValueError:
+                continue # Skip if numeral is invalid
         return progression
-    
-    def transpose_progression(self, progression: List[Dict], semitones: int) -> List[Dict]:
-        """Transpose an entire chord progression"""
-        transposed = []
-        
-        for chord_data in progression:
-            chord_name = chord_data['chord_name']
-            
-            # Extract root note (first character, handle sharps/flats)
-            root_note = chord_name[0]
-            if len(chord_name) > 1 and chord_name[1] in ['#', 'b']:
-                root_note = chord_name[:2]
-            
-            # Transpose root note
-            new_root = self.transpose_note(root_note, semitones)
-            
-            # Reconstruct chord name
-            if chord_name.startswith(root_note):
-                new_chord_name = chord_name.replace(root_note, new_root, 1)
-            else:
-                new_chord_name = new_root + chord_name[1:]
-            
-            transposed.append({
-                **chord_data,
-                'chord_name': new_chord_name
-            })
-        
-        return transposed
 
+    def calculate_semitones_between_keys(self, from_key: str, to_key: str) -> int:
+        """Calculates the semitone difference between two keys."""
+        from_base = from_key.replace(' major', '').replace(' minor', '').replace('m', '')
+        to_base = to_key.replace(' major', '').replace(' minor', '').replace('m', '')
+        
+        from_semitone = self.note_to_semitone(from_base)
+        to_semitone = self.note_to_semitone(to_base)
+        
+        diff = to_semitone - from_semitone
+        if diff > 6:
+            return diff - 12
+        if diff < -6:
+            return diff + 12
+        return diff
 
 # Global instance for easy access
 music_engine = MusicTheoryEngine()
+
